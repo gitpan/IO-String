@@ -1,6 +1,6 @@
 package IO::String;
 
-# Copyright 1998-1999 Gisle Aas.
+# Copyright 1998-2000 Gisle Aas.
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the same terms as Perl itself.
@@ -8,7 +8,7 @@ package IO::String;
 require 5.005_03;
 use strict;
 use vars qw($VERSION $DEBUG $IO_CONSTANTS);
-$VERSION = "1.00";  # $Date: 1999/04/11 22:22:18 $
+$VERSION = "1.01";  # $Date: 2000/01/27 23:12:39 $
 
 use Symbol ();
 
@@ -103,7 +103,7 @@ sub ungetc
 sub eof
 {
     my $self = shift;
-    length(${*$self->{buf}}) >= *$self->{pos};
+    length(${*$self->{buf}}) <= *$self->{pos};
 }
 
 sub print
@@ -497,7 +497,7 @@ L<IO::File>, L<IO::Stringy>
 
 =head1 COPYRIGHT
 
-Copyright 1998-1999 Gisle Aas.
+Copyright 1998-2000 Gisle Aas.
 
 This library is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.
