@@ -1,6 +1,6 @@
 package IO::String;
 
-# Copyright 1998-2000 Gisle Aas.
+# Copyright 1998-2002 Gisle Aas.
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the same terms as Perl itself.
@@ -8,7 +8,7 @@ package IO::String;
 require 5.005_03;
 use strict;
 use vars qw($VERSION $DEBUG $IO_CONSTANTS);
-$VERSION = "1.01";  # $Date: 2000/01/27 23:12:39 $
+$VERSION = "1.02";  # $Date: 2002/12/27 19:42:26 $
 
 use Symbol ();
 
@@ -77,6 +77,7 @@ sub close
     delete *$self->{buf};
     delete *$self->{pos};
     delete *$self->{lno};
+    untie *$self;
     $self;
 }
 
@@ -157,9 +158,9 @@ sub seek
     my $buf = *$self->{buf} || return;
     my $len = length($$buf);
     my $pos = *$self->{pos};
-    
+
     _init_seek_constants() unless defined $SEEK_SET;
-	
+
     if    ($whence == $SEEK_SET) { $pos = $off }
     elsif ($whence == $SEEK_CUR) { $pos += $off }
     elsif ($whence == $SEEK_END) { $pos = $len + $off }
@@ -348,6 +349,10 @@ sub stat
     );
 }
 
+sub FILENO {
+    return undef;   # XXX perlfunc says this means the file is closed
+}
+
 sub blocking {
     my $self = shift;
     my $old = *$self->{blocking} || 0;
@@ -375,7 +380,13 @@ my $notmuch = sub { return };
 *PRINTF = \&printf;
 *READ   = \&read;
 *WRITE  = \&write;
+*SEEK   = \&seek;
+*TELL   = \&getpos;
+*EOF    = \&eof;
 *CLOSE  = \&close;
+
+*BINMODE = $notmuch;
+
 
 sub string_ref
 {
@@ -416,6 +427,7 @@ IO::String - Emulate IO::File interface for in-core strings
  $pos = $io->getpos;
  $io->setpos(0);        # rewind
  $io->seek(-30, -1);
+ seek($io, 0, 0);
 
 =head1 DESCRIPTION
 
@@ -487,9 +499,10 @@ syswrite() methods allow the length argument to be left out.
 
 =head1 BUGS
 
-The perl TIEHANDLE interface is still not complete.  There are quite a
-few file operations that will not yet invoke any method on the tied
-object.  See L<perltie> for details.
+The perl version < 5.6 the TIEHANDLE interface was still not complete.
+If you use such a perl seek(), tell(), eof(), fileno(), binmode() will
+not do anything on a C<IO::String> handle.  See L<perltie> for
+details.
 
 =head1 SEE ALSO
 
@@ -497,7 +510,7 @@ L<IO::File>, L<IO::Stringy>
 
 =head1 COPYRIGHT
 
-Copyright 1998-2000 Gisle Aas.
+Copyright 1998-2002 Gisle Aas.
 
 This library is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.

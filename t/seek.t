@@ -1,4 +1,4 @@
-print "1..9\n";
+print "1..10\n";
 
 $str = "abcd";
 
@@ -15,7 +15,11 @@ sub all_pos
    $io->tell   == $expect &&
    $io->seek(0, 1) == $expect &&
    $io->sysseek(0, 1) == $expect &&
-   1;
+   $] >= 5.006 ? ( tell($io) == $expect &&
+      	           seek($io, 0, 1) == $expect &&
+                   sysseek($io, 0, 1) == $expect
+                 )
+               : 1;
 }
 
 print "not " unless all_pos($io, 0);
@@ -50,4 +54,10 @@ print "ok 8\n";
 $io->seek(0,0);
 print "not " unless all_pos($io, 0);
 print "ok 9\n";
+
+if ($] >= 5.006) {
+   seek($io, 1, 0);
+   print "not " unless all_pos($io, 1);
+}
+print "ok 10\n";
 
