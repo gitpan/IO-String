@@ -1,6 +1,6 @@
 package IO::String;
 
-# Copyright 1998-2002 Gisle Aas.
+# Copyright 1998-2003 Gisle Aas.
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the same terms as Perl itself.
@@ -8,7 +8,7 @@ package IO::String;
 require 5.005_03;
 use strict;
 use vars qw($VERSION $DEBUG $IO_CONSTANTS);
-$VERSION = "1.02";  # $Date: 2002/12/27 19:42:26 $
+$VERSION = "1.03";  # $Date: 2003/10/06 15:06:11 $
 
 use Symbol ();
 
@@ -77,7 +77,13 @@ sub close
     delete *$self->{buf};
     delete *$self->{pos};
     delete *$self->{lno};
-    untie *$self;
+    if ($] >= 5.006 && $[ < 5.007) {
+	# perl-5.6.x segfaults on untie, so avoid it
+    }
+    else {
+	untie *$self;
+	undef *$self;
+    }
     $self;
 }
 
@@ -169,7 +175,6 @@ sub seek
 
     $pos = 0 if $pos < 0;
     $self->truncate($pos) if $pos > $len;  # extend file
-    *$self->{lno} = 0;
     *$self->{pos} = $pos;
 }
 
@@ -182,7 +187,6 @@ sub pos
 	my $buf = *$self->{buf};
 	my $len = $buf ? length($$buf) : 0;
 	$pos = $len if $pos > $len;
-	*$self->{lno} = 0;
 	*$self->{pos} = $pos;
     }
     $old;
@@ -401,7 +405,7 @@ __END__
 
 =head1 NAME
 
-IO::String - Emulate IO::File interface for in-core strings
+IO::String - Emulate file interface for in-core strings
 
 =head1 SYNOPSIS
 
@@ -435,9 +439,14 @@ The C<IO::String> module provide the C<IO::File> interface for in-core
 strings.  An C<IO::String> object can be attached to a string, and
 will make it possible to use the normal file operations for reading or
 writing data, as well as seeking to various locations of the string.
-The main reason you might want to do this, is if you have some other
-library module that only provide an interface to file handles, and you
-want to keep all the stuff in memory.
+This is useful when you want to use a library module, that only
+provide an interface to file handles, on data you have in a string
+variable.
+
+Note that perl-5.8 and better has built in support for "in memory"
+files.  These are set up by passing a reference instead of a filename
+to the open() call, so the reason to still use this module is that it
+makes the code backwards compatible to older versions of perl.
 
 The C<IO::String> module provide an interface compatible with
 C<IO::File> as distributed with F<IO-1.20>, but the following methods
@@ -449,7 +458,9 @@ The following methods are specific for the C<IO::String> class:
 
 =over 4
 
-=item $io = IO::String->new( [$string] )
+=item $io = IO::String->new
+
+=item $io = IO::String->new( $string )
 
 The constructor returns a newly created C<IO::String> object.  It
 takes an optional argument which is the string to read from or write
@@ -460,7 +471,9 @@ The C<IO::String> object returned will be tied to itself.  This means
 that you can use most perl IO builtins on it too; readline, <>, getc,
 print, printf, syswrite, sysread, close.
 
-=item $io->open( [$string] )
+=item $io->open
+
+=item $io->open( $string )
 
 Attach an existing IO::String object to some other $string, or
 allocate a new internal buffer (if no argument is given).  The
@@ -472,13 +485,17 @@ This method will return a reference to the string that is attached to
 the C<IO::String> object.  Most useful when you let the C<IO::String>
 create an internal buffer to write into.
 
-=item $io->pad( [$char] )
+=item $io->pad
+
+=item $io->pad( $char )
 
 The pad() method makes it possible to specify the padding to use if
 the string is extended by either the seek() or truncate() methods.  It
 is a single character and defaults to "\0".
 
-=item $io->pos( [$newpos] )
+=item $io->pos
+
+=item $io->pos( $newpos )
 
 Yet another interface for reading and setting the current read/write
 position within the string (the normal getpos/setpos/tell/seek
@@ -494,9 +511,6 @@ then it works as seek().
 
 =back
 
-One more difference compared to IO::Handle, is that the write() and
-syswrite() methods allow the length argument to be left out.
-
 =head1 BUGS
 
 The perl version < 5.6 the TIEHANDLE interface was still not complete.
@@ -506,11 +520,11 @@ details.
 
 =head1 SEE ALSO
 
-L<IO::File>, L<IO::Stringy>
+L<IO::File>, L<IO::Stringy>, L<perlfunc/open>
 
 =head1 COPYRIGHT
 
-Copyright 1998-2002 Gisle Aas.
+Copyright 1998-2003 Gisle Aas.
 
 This library is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.
