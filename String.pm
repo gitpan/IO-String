@@ -8,7 +8,7 @@ package IO::String;
 require 5.005_03;
 use strict;
 use vars qw($VERSION $DEBUG $IO_CONSTANTS);
-$VERSION = "1.06";  # $Date: 2004/11/05 15:05:27 $
+$VERSION = "1.07";  # $Date: 2005/10/24 19:06:12 $
 
 use Symbol ();
 
@@ -308,12 +308,13 @@ sub read
 {
     my $self = shift;
     my $buf = *$self->{buf};
-    return unless $buf;
+    return undef unless $buf;
 
     my $pos = *$self->{pos};
     my $rem = length($$buf) - $pos;
     my $len = $_[1];
     $len = $rem if $len > $rem;
+    return undef if $len < 0;
     if (@_ > 2) { # read offset
 	substr($_[0],$_[2]) = substr($$buf, $pos, $len);
     }
